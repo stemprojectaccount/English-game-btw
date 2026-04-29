@@ -516,6 +516,7 @@ export const HandTrackerGame: React.FC = () => {
       {gameState === 'START' && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-40">
              <div className="bg-white text-black p-12 shadow-[20px_20px_0px_#3b82f6] max-w-2xl text-center pointer-events-auto flex flex-col gap-6">
+                 <p className="text-sm font-bold tracking-widest text-slate-500 uppercase -mb-4">Made by ThanhDat7A</p>
                  <h1 className="text-6xl font-black leading-[0.9] tracking-tighter uppercase">Pop & <span className="text-blue-600">Learn</span></h1>
                  <p className="text-black font-bold text-lg mb-4">
                      Di chuyển tay để đập vỡ những quả bóng đang rơi. Trả lời đúng các câu hỏi tiếng Anh để ghi điểm! 
