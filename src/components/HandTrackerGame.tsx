@@ -153,12 +153,13 @@ export const HandTrackerGame: React.FC = () => {
 
       setGameState('POPPING');
       
-      setTimeout(() => {
+      setTimeout(async () => {
           if (isTutorial) {
               setTutorialPhase('QUESTION');
               setGameState('QUESTION');
               setCurrentQuestion({
                   id: 'tut1',
+                  difficulty: 'easy',
                   type: 'translate',
                   word: 'Welcome',
                   options: ['Chào mừng', 'Tạm biệt', 'Cảm ơn'],
@@ -166,8 +167,13 @@ export const HandTrackerGame: React.FC = () => {
                   textToRead: 'Welcome'
               });
           } else {
-              setGameState('QUESTION');
-              const q = getRandomQuestion(difficulty, usedQuestionIdsRef.current);
+              setGameState('QUESTION'); // Change state to show modal right away
+              const { generateQuestion } = await import('../utils/geminiService');
+              let q = await generateQuestion(difficulty);
+              
+              if (!q) {
+                  q = getRandomQuestion(difficulty, usedQuestionIdsRef.current);
+              }
               usedQuestionIdsRef.current.add(q.id);
               setCurrentQuestion(q);
           }
@@ -305,7 +311,9 @@ export const HandTrackerGame: React.FC = () => {
 
     ballsRef.current.forEach((ball, i) => {
         if (!ball.active) return;
-        ball.y += ball.speed;
+        if (gameState === 'PLAYING' || (isTutorial && tutorialPhase === 'BALLOON')) {
+            ball.y += ball.speed;
+        }
 
         const radiusY = ball.radius * 1.2;
 
@@ -619,6 +627,14 @@ export const HandTrackerGame: React.FC = () => {
       </footer>
 
       {/* Question Modal */}
+      {gameState === 'QUESTION' && !currentQuestion && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50">
+          <div className="bg-white text-black px-12 py-8 shadow-[10px_10px_0px_#3b82f6] text-center font-black animate-pulse flex flex-col items-center gap-4">
+             <div className="w-12 h-12 border-8 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+             <p className="text-2xl uppercase mt-4">Generating Question...</p>
+          </div>
+        </div>
+      )}
       <QuestionModal 
          question={currentQuestion}
          onAnswerComplete={handleAnswerComplete}
