@@ -1,0 +1,8 @@
+{
+  "name": "English Pop & Learn",
+  "description": "An interactive hand-tracking game where you pop falling balls and answer English questions.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
