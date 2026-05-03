@@ -36,9 +36,10 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
     if (isCorrect) {
        playCorrectSound();
        confetti({
-         particleCount: 100,
-         spread: 70,
-         origin: { y: 0.6 }
+         particleCount: 150,
+         spread: 80,
+         origin: { y: 0.5 },
+         colors: ['#60a5fa', '#c084fc', '#f472b6', '#34d399']
        });
     } else {
        playIncorrectSound();
@@ -50,22 +51,23 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
   };
 
   const renderTranslateOrComplete = () => {
-    const q = question as any; // Type assertion for brevity since we check type
+    const q = question as any; // Type assertion
     const options: string[] = q.options;
 
     return (
-      <div className="flex flex-col gap-4 mt-6">
+      <div className="flex flex-col gap-4 mt-8">
         {options.map((opt, idx) => {
           const isSelected = selectedOption === opt;
           const isCorrect = q.answer === opt;
           
-          let btnClass = "px-6 py-4 bg-slate-100 border-2 border-black font-bold text-2xl hover:bg-yellow-300";
+          let btnClass = "px-6 py-5 rounded-2xl glass-panel font-medium text-2xl hover:scale-[1.02] text-dynamic transition-all";
           if (isSelected) {
             btnClass = isCorrect 
-                ? "px-6 py-4 bg-lime-400 border-2 border-black font-bold text-2xl shadow-[6px_6px_0px_#000]" 
-                : "px-6 py-4 bg-red-400 border-2 border-black font-bold text-2xl shadow-[6px_6px_0px_#000]";
+                ? "px-6 py-5 rounded-2xl bg-gradient-to-r from-emerald-400 to-emerald-500 border-2 border-emerald-400 font-bold text-2xl shadow-[0_10px_20px_rgba(52,211,153,0.3)] text-white" 
+                : "px-6 py-5 rounded-2xl bg-gradient-to-r from-rose-400 to-rose-500 border-2 border-rose-400 font-bold text-2xl shadow-[0_10px_20px_rgba(244,63,94,0.3)] text-white";
           } else if (isAnimating && isCorrect) {
-             btnClass = "px-6 py-4 bg-lime-400 border-2 border-black font-bold text-2xl shadow-[6px_6px_0px_#000]"; // Reveal correct answer
+             // Reveal correct answer if wrong one was picked
+             btnClass = "px-6 py-5 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 border-2 border-emerald-300 dark:border-emerald-700 font-bold text-2xl text-emerald-700 dark:text-emerald-400";
           }
 
           return (
@@ -76,9 +78,12 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
                 setSelectedOption(opt);
                 handleValidation(opt === q.answer);
               }}
-              className={`transition-colors flex items-center justify-between text-left cursor-pointer ${btnClass} ${isAnimating && !isSelected && !isCorrect ? 'opacity-50' : ''}`}
+              className={`transition-all duration-300 flex items-center justify-between text-left cursor-pointer ${btnClass} ${isAnimating && !isSelected && !isCorrect ? 'opacity-30 scale-95 origin-left' : ''}`}
             >
               {opt}
+              {isSelected && isCorrect && <CheckCircle className="w-8 h-8 text-white" />}
+              {isSelected && !isCorrect && <XCircle className="w-8 h-8 text-white" />}
+              {isAnimating && !isSelected && isCorrect && <CheckCircle className="w-8 h-8 text-emerald-600" />}
             </button>
           )
         })}
@@ -91,34 +96,34 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
     const availableWords = q.words.filter((w: string) => !orderedWords.includes(w));
 
     return (
-      <div className="flex flex-col gap-6 mt-6">
-        <div className="border-b-4 border-dashed border-slate-300 py-6 min-h-[120px] flex flex-wrap items-center gap-4">
-            {orderedWords.length === 0 && <span className="text-3xl font-black text-slate-400 italic">Drag words here...</span>}
+      <div className="flex flex-col gap-8 mt-6">
+        <div className="glass-panel rounded-3xl p-6 min-h-[140px] flex flex-wrap items-center gap-3">
+            {orderedWords.length === 0 && <span className="text-2xl font-medium text-dynamic-muted italic w-full text-center">Tap words below to build the sentence...</span>}
             {orderedWords.map((w, idx) => (
                 <button 
                   key={`ord-${idx}`} 
                   onClick={() => !isAnimating && setOrderedWords(prev => prev.filter((_, i) => i !== idx))}
-                  className="px-6 py-4 bg-yellow-300 border-2 border-black font-bold text-2xl cursor-pointer"
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 border border-purple-400 shadow-[0_8px_15px_rgba(168,85,247,0.3)] font-bold text-xl cursor-pointer hover:scale-105 transition-transform text-white"
                 >
                     {w}
                 </button>
             ))}
         </div>
 
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-3 justify-center">
              {availableWords.map((w: string, idx: number) => (
                 <button
                   key={`avail-${idx}`} 
                   disabled={isAnimating}
                   onClick={() => setOrderedWords([...orderedWords, w])}
-                  className="px-6 py-4 bg-slate-100 border-2 border-black font-bold text-2xl cursor-pointer hover:bg-yellow-300"
+                  className="px-6 py-3 rounded-full btn-secondary font-medium text-xl cursor-pointer"
                 >
                     {w}
                 </button>
             ))}
         </div>
 
-        <div className="flex justify-end gap-4 mt-4">
+        <div className="flex justify-end gap-4 mt-2">
           <button 
             disabled={orderedWords.length !== q.words.length || isAnimating}
             onClick={() => {
@@ -126,9 +131,9 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
               const isCorrect = currentSentence === q.answer;
               handleValidation(isCorrect);
             }}
-            className="px-12 py-3 bg-blue-600 text-white font-black uppercase text-sm tracking-widest shadow-[6px_6px_0px_#000] hover:translate-y-1 hover:shadow-[2px_2px_0px_#000] transition-all disabled:opacity-50 disabled:pointer-events-none"
+            className="btn-primary px-10 py-4 rounded-full font-bold uppercase text-sm tracking-[0.2em] transition-all disabled:opacity-50 disabled:pointer-events-none"
           >
-            Confirm
+            Confirm Answer
           </button>
         </div>
       </div>
@@ -141,44 +146,52 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm pointer-events-none"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dynamic-overlay backdrop-blur-xl pointer-events-none"
       >
         <motion.div 
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="w-[700px] bg-white text-black p-12 shadow-[20px_20px_0px_#3b82f6] pointer-events-auto flex flex-col gap-6"
+          className="w-[700px] glass-modal p-12 pointer-events-auto flex flex-col gap-6 rounded-[2.5rem] relative overflow-hidden text-dynamic"
         >
-            <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3 bg-black text-white px-4 py-1">
-                <span className="text-xs font-bold uppercase tracking-widest">Question</span>
-                <div className="w-2 h-2 bg-blue-500"></div>
-                <span className="text-xs font-bold uppercase tracking-widest">{question.type}</span>
+            {/* Soft background glow based on question type */}
+            <div className={`absolute -top-32 -right-32 w-64 h-64 rounded-full blur-[80px] opacity-30 pointer-events-none ${
+              question.type === 'translate' ? 'bg-blue-300' :
+              question.type === 'complete' ? 'bg-purple-300' : 'bg-pink-300'
+            }`}></div>
+
+            <div className="flex justify-between items-center relative z-10">
+                <div className="flex items-center gap-3 glass-panel rounded-full px-4 py-1.5 backdrop-blur-md">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-dynamic-muted">Question</span>
+                   <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></div>
+                   <span className="text-xs font-bold uppercase tracking-widest text-dynamic-secondary">{question.type}</span>
                 </div>
             </div>
 
-            <div>
+            <div className="relative z-10 mt-2">
                {question.type === 'translate' && (
-                  <h2 className="text-6xl font-black leading-[0.9] tracking-tighter uppercase">
-                    Translate <span className="text-blue-600">{(question as any).word}</span>
+                  <h2 className="text-5xl font-display font-black leading-tight tracking-tight uppercase drop-shadow-sm text-dynamic">
+                    Translate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">{(question as any).word}</span>
                   </h2>
                )}
                {question.type === 'complete' && (
-                  <h2 className="text-4xl font-black leading-[0.9] tracking-tighter uppercase">
+                  <h2 className="text-4xl font-display font-bold leading-snug tracking-tight text-dynamic drop-shadow-sm">
                     {(question as any).sentenceWithBlank}
                   </h2>
                )}
                {question.type === 'reorder' && (
-                  <h2 className="text-5xl font-black leading-[0.9] tracking-tighter uppercase">
-                    Rearrange the <span className="text-blue-600">words</span>
+                  <h2 className="text-4xl font-display font-black leading-tight tracking-tight uppercase drop-shadow-sm text-dynamic">
+                    Rearrange the <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">words</span>
                   </h2>
                )}
             </div>
 
-            {question.type === 'reorder' ? renderReorder() : renderTranslateOrComplete()}
-
+            <div className="relative z-10">
+               {question.type === 'reorder' ? renderReorder() : renderTranslateOrComplete()}
+            </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
 };
+
