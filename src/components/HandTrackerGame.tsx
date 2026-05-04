@@ -533,7 +533,7 @@ export const HandTrackerGame: React.FC = () => {
           </button>
 
           {showThemeMenu && (
-            <div className="absolute top-14 left-0 glass-modal rounded-3xl p-3 flex flex-col gap-1 min-w-[180px] animate-in slide-in-from-top-2 fade-in duration-200 border-2">
+            <div className="absolute bottom-16 left-0 glass-modal rounded-3xl p-3 flex flex-col gap-1 min-w-[180px] animate-in slide-in-from-bottom-2 fade-in duration-200 border-2 origin-bottom text-left">
               <button 
                 onClick={() => { setCurrentTheme('light'); setShowThemeMenu(false); }}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all ${currentTheme === 'light' ? 'bg-black/10 dark:bg-white/10 font-bold scale-105 shadow-sm' : 'hover:bg-black/5 dark:hover:bg-white/5 font-medium'}`}
