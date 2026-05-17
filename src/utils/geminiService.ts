@@ -29,12 +29,11 @@ export async function generateQuestion(difficulty: Difficulty): Promise<Question
     'impossible': 'very advanced vocabulary, idioms, subjunctive mood, and rare words.'
   }[difficulty];
 
-  const prompt = `Generate a single English learning question. 
+  const prompt = `Generate a single English to Vietnamese vocabulary translation question. 
 Difficulty: ${difficulty} (${difficultyPrompt})
 
-You must return a valid JSON object matching ONE of these three structures exactly:
+You must return a valid JSON object matching exactly this structure:
 
-Type 1 (Translate a word into Vietnamese):
 {
   "type": "translate",
   "word": "Apple",
@@ -43,23 +42,7 @@ Type 1 (Translate a word into Vietnamese):
   "textToRead": "Apple"
 }
 
-Type 2 (Sentence completion):
-{
-  "type": "complete",
-  "sentenceWithBlank": "I ___ to the store yesterday.",
-  "options": ["go", "went", "gone"],
-  "answer": "went",
-  "textToRead": "I went to the store yesterday."
-}
-
-Type 3 (Reorder words to make a sentence):
-{
-  "type": "reorder",
-  "words": ["playing", "are", "they", "football"],
-  "answer": "they are playing football",
-  "textToRead": "they are playing football"
-}
-
+The word must be in English. The options and answer MUST be in Vietnamese.
 ONLY return the JSON object, absolutely no markdown formatting, no \`\`\`json blocks. Return raw JSON.`;
 
   try {
@@ -78,7 +61,7 @@ ONLY return the JSON object, absolutely no markdown formatting, no \`\`\`json bl
     const parsedData = JSON.parse(text);
     
     // Validate basic structure
-    if (parsedData && ['translate', 'complete', 'reorder'].includes(parsedData.type)) {
+    if (parsedData && parsedData.type === 'translate') {
        return {
         ...parsedData,
         id: 'gen_' + Date.now() + Math.random().toString(36).substring(7),
