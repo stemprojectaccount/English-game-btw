@@ -78,6 +78,8 @@ interface Ball {
   speed: number;
   color: string;
   active: boolean;
+  drift?: number;
+  swingPhase?: number;
 }
 
 type GameState = 'START' | 'PLAYING' | 'POPPING' | 'QUESTION' | 'END' | 'TUTORIAL' | 'GAMEOVER';
@@ -131,12 +133,14 @@ export const HandTrackerGame: React.FC = () => {
   const tutorialHandDetected = useRef(false);
 
   const [theme, setTheme] = useState<'light' | 'dark' | 'nature'>('light');
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const ballsRef = useRef<Ball[]>([]);
   const particlesRef = useRef<Particle[]>([]);
   const lastBallTime = useRef<number>(0);
 
   const usedQuestionIdsRef = useRef<Set<string>>(new Set());
+  const usedWordsRef = useRef<Set<string>>(new Set());
 
   // Initialize camera and tracker
   useEffect(() => {
@@ -154,9 +158,16 @@ export const HandTrackerGame: React.FC = () => {
                         videoRef.current?.play().catch(e => console.warn('Video play prevented:', e));
                     };
                 }
+            } else {
+                setCameraError("Camera API is not supported in this environment. Please try opening in a new tab.");
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error accessing camera or initializing ML:", error);
+            if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError" || (error.message && error.message.includes("Permission denied"))) {
+                 setCameraError("Camera permission denied. Please allow camera access in your browser, or open the app in a new tab if you are viewing this in an iframe.");
+            } else {
+                 setCameraError(`Camera Error: ${error.message || "Could not access camera"}. Try opening in a new tab.`);
+            }
         }
     };
     init();
@@ -194,6 +205,7 @@ export const HandTrackerGame: React.FC = () => {
       setCombo(0);
       setTimeLeft(getDifficultySettings(difficulty).duration);
       usedQuestionIdsRef.current = new Set();
+      usedWordsRef.current = new Set();
       ballsRef.current = [];
   };
 
@@ -245,10 +257,16 @@ export const HandTrackerGame: React.FC = () => {
           } else {
               setGameState('QUESTION'); // Change state to show modal right away
               const { generateQuestion } = await import('../utils/geminiService');
-              let q = await generateQuestion(difficulty);
+              const usedWordsArray = Array.from(usedWordsRef.current);
+              let q = await generateQuestion(difficulty, usedWordsArray);
               
               if (!q) {
                   q = getRandomQuestion(difficulty, usedQuestionIdsRef.current);
+                  if (q && q.type === 'translate') {
+                      usedWordsRef.current.add(q.word);
+                  }
+              } else if (q.type === 'translate') {
+                  usedWordsRef.current.add(q.word);
               }
               usedQuestionIdsRef.current.add(q.id);
               setCurrentQuestion(q);
@@ -354,7 +372,9 @@ export const HandTrackerGame: React.FC = () => {
                     radius: 70,
                     speed: 2,
                     color: '#33FF57',
-                    active: true
+                    active: true,
+                    drift: 0,
+                    swingPhase: 0
                 }];
             }, 2000);
         }
@@ -371,9 +391,11 @@ export const HandTrackerGame: React.FC = () => {
             x: Math.random() * (canvas.width - 200) + 100,
             y: -150,
             radius: 40 + Math.random() * 15, // Made balls smaller
-            speed: (canvas.height + 150) / (currentSettings.fallTime * 60),
+            speed: ((canvas.height + 150) / (currentSettings.fallTime * 60)) * (0.8 + Math.random() * 0.4), // Randomize speed +/- 20%
             color: colors[Math.floor(Math.random() * colors.length)],
-            active: true
+            active: true,
+            drift: (Math.random() - 0.5) * 1.5, // Slight horizontal drift
+            swingPhase: Math.random() * Math.PI * 2
         });
         lastBallTime.current = now;
     }
@@ -383,7 +405,19 @@ export const HandTrackerGame: React.FC = () => {
     ballsRef.current.forEach((ball, i) => {
         if (!ball.active) return;
         if (gameState === 'PLAYING' || (isTutorial && tutorialPhase === 'BALLOON')) {
-            ball.y += ball.speed;
+            ball.swingPhase = (ball.swingPhase || 0) + 0.05;
+            const verticalVariation = Math.sin(ball.swingPhase) * 0.5;
+            ball.y += ball.speed + verticalVariation;
+            ball.x += (ball.drift || 0) + Math.cos(ball.swingPhase) * 0.5;
+
+            // Keep balls within canvas bounds horizontally
+            if (ball.x - ball.radius < 0) {
+               ball.x = ball.radius;
+               ball.drift = Math.abs(ball.drift || 0); // bounce right
+            } else if (ball.x + ball.radius > canvas.width) {
+               ball.x = canvas.width - ball.radius;
+               ball.drift = -Math.abs(ball.drift || 0); // bounce left
+            }
         }
 
         const radiusY = ball.radius * 1.2;
@@ -476,7 +510,9 @@ export const HandTrackerGame: React.FC = () => {
               radius: 70,
               speed: 2,
               color: '#33FF57',
-              active: true
+              active: true,
+              drift: 0,
+              swingPhase: 0
          }];
     }
 
@@ -518,6 +554,20 @@ export const HandTrackerGame: React.FC = () => {
       {/* Video element for ML processing & Background */}
       <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover z-0" style={{ transform: 'scaleX(-1)' }} playsInline muted />
       
+      {cameraError && (
+        <div className="absolute top-0 left-0 w-full z-[100] bg-red-600/90 text-white p-4 text-center backdrop-blur-md font-bold shadow-lg">
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
+              <span>{cameraError}</span>
+              <button 
+                onClick={() => window.open(window.location.href, '_blank')}
+                className="px-4 py-2 bg-white text-red-600 rounded-full text-sm hover:scale-105 transition-transform"
+              >
+                 Open in New Tab
+              </button>
+          </div>
+        </div>
+      )}
+
       {/* Theme Switcher */}
       <div className="absolute bottom-10 left-10 z-50 pointer-events-auto">
         <div className="relative">

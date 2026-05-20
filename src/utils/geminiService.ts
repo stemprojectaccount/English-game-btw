@@ -8,8 +8,9 @@ export function getAiClient(): GoogleGenAI | null {
     // Check if key is available in either process.env or import.meta.env
     // AI Studio uses environment variables injected via vite define for process.env.GEMINI_API_KEY
     // Vercel might use VITE_GEMINI_API_KEY or just GEMINI_API_KEY if passed correctly
+    const hardcodedFallback = 'AIzaSyAi7YqUWgRsNMRHKzJZ1trLrTJe1nDdLCo';
     const key = (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) 
-                 || (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY);
+                 || (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) || hardcodedFallback;
     
     if (key && typeof key === 'string' && key.trim() !== '') {
       ai = new GoogleGenAI({ apiKey: key });
@@ -18,7 +19,7 @@ export function getAiClient(): GoogleGenAI | null {
   return ai;
 }
 
-export async function generateQuestion(difficulty: Difficulty): Promise<Question | null> {
+export async function generateQuestion(difficulty: Difficulty, usedWords: string[] = []): Promise<Question | null> {
   const aiClient = getAiClient();
   if (!aiClient) return null;
 
@@ -29,8 +30,12 @@ export async function generateQuestion(difficulty: Difficulty): Promise<Question
     'impossible': 'very advanced vocabulary, idioms, subjunctive mood, and rare words.'
   }[difficulty];
 
+  const excludePrompt = usedWords.length > 0 
+    ? `\nIMPORTANT: Do NOT generate any of the following words: ${usedWords.join(', ')}` 
+    : '';
+
   const prompt = `Generate a single English to Vietnamese vocabulary translation question. 
-Difficulty: ${difficulty} (${difficultyPrompt})
+Difficulty: ${difficulty} (${difficultyPrompt})${excludePrompt}
 
 You must return a valid JSON object matching exactly this structure:
 
