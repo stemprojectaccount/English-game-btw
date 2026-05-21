@@ -19,6 +19,32 @@ export const playTone = (frequency: number, type: OscillatorType, duration: numb
     oscillator.stop(audioCtx.currentTime + duration);
 };
 
+let bgmAudio: HTMLAudioElement | null = null;
+export const playBGM = () => {
+    if (!bgmAudio) {
+        bgmAudio = new Audio('https://docs.google.com/uc?export=download&id=1BREUPr1dxzV1FTU4CI2gyNVSKcbO29am'); // We'll put bgm.mp3 in public folder
+        bgmAudio.loop = true;
+        bgmAudio.volume = 0.4;
+        bgmAudio.crossOrigin = "anonymous";
+    }
+    
+    if (bgmAudio.paused) {
+        let playPromise = bgmAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Autoplay prevented:", error);
+            });
+        }
+    }
+};
+
+export const stopBGM = () => {
+    if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+    }
+};
+
 export const playPopSound = () => {
     playTone(600, 'sine', 0.1, 0.3);
     setTimeout(() => playTone(800, 'sine', 0.15, 0.2), 50);

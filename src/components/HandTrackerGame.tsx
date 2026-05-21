@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { initializeHandTracker } from '../utils/handTracker';
 import { getRandomQuestion, Question, Difficulty } from '../utils/questions';
-import { playPopSound, playStartSound, playEndSound } from '../utils/audio';
+import { playPopSound, playStartSound, playEndSound, playBGM, stopBGM } from '../utils/audio';
 import { QuestionModal } from './QuestionModal';
 import { Trophy, Timer, Play, Palette, Sun, Moon, Leaf, Droplet, Sunset, Zap, Star } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -142,6 +142,21 @@ export const HandTrackerGame: React.FC = () => {
   const usedQuestionIdsRef = useRef<Set<string>>(new Set());
   const usedWordsRef = useRef<Set<string>>(new Set());
 
+  // Background music initialization
+  useEffect(() => {
+    const handleInteraction = () => {
+        playBGM();
+        document.removeEventListener('click', handleInteraction);
+        document.removeEventListener('pointerdown', handleInteraction);
+    };
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('pointerdown', handleInteraction);
+    return () => {
+        document.removeEventListener('click', handleInteraction);
+        document.removeEventListener('pointerdown', handleInteraction);
+    };
+  }, []);
+
   // Initialize camera and tracker
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -200,6 +215,7 @@ export const HandTrackerGame: React.FC = () => {
 
   const startGame = () => {
       playStartSound();
+      playBGM();
       setIsTutorial(false);
       setGameState('PLAYING');
       setScore(0);
@@ -211,6 +227,7 @@ export const HandTrackerGame: React.FC = () => {
   };
 
   const startTutorial = () => {
+      playBGM();
       setIsTutorial(true);
       setTutorialPhase('HAND');
       setGameState('TUTORIAL');
