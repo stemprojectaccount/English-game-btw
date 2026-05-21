@@ -20,7 +20,14 @@ export const playTone = (frequency: number, type: OscillatorType, duration: numb
 };
 
 let bgmAudio: HTMLAudioElement | null = null;
-export const playBGM = () => {
+let bgmPreferredEnabled = localStorage.getItem('bgm_preferred_enabled') !== 'false';
+
+export const playBGM = (force: boolean = false) => {
+    // If the user preferred not to play background music, do not play unless forced
+    if (!bgmPreferredEnabled && !force) {
+        return;
+    }
+
     if (!bgmAudio) {
         bgmAudio = new Audio('/bgm.mp3');
         bgmAudio.loop = true;
@@ -48,21 +55,21 @@ export const isBGMPlaying = (): boolean => {
     return bgmAudio ? !bgmAudio.paused : false;
 };
 
+export const getBGMPreference = (): boolean => {
+    return bgmPreferredEnabled;
+};
+
 export const toggleBGM = (): boolean => {
-    if (!bgmAudio) {
-        playBGM();
-        return true;
-    }
-    if (bgmAudio.paused) {
-        let playPromise = bgmAudio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.log("Autoplay prevented on toggle:", error);
-            });
-        }
+    bgmPreferredEnabled = !bgmPreferredEnabled;
+    localStorage.setItem('bgm_preferred_enabled', String(bgmPreferredEnabled));
+
+    if (bgmPreferredEnabled) {
+        playBGM(true);
         return true;
     } else {
-        bgmAudio.pause();
+        if (bgmAudio) {
+            bgmAudio.pause();
+        }
         return false;
     }
 };
