@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { initializeHandTracker } from '../utils/handTracker';
 import { getRandomQuestion, Question, Difficulty } from '../utils/questions';
-import { playPopSound, playStartSound, playEndSound, playBGM, stopBGM } from '../utils/audio';
+import { playPopSound, playStartSound, playEndSound, playBGM, stopBGM, toggleBGM, isBGMPlaying, setBGMVolume, getBGMVolume } from '../utils/audio';
 import { QuestionModal } from './QuestionModal';
-import { Trophy, Timer, Play, Palette, Sun, Moon, Leaf, Droplet, Sunset, Zap, Star } from 'lucide-react';
+import { Trophy, Timer, Play, Palette, Sun, Moon, Leaf, Droplet, Sunset, Zap, Star, Volume2, VolumeX, Music } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -142,10 +142,15 @@ export const HandTrackerGame: React.FC = () => {
   const usedQuestionIdsRef = useRef<Set<string>>(new Set());
   const usedWordsRef = useRef<Set<string>>(new Set());
 
+  // BGM states and volume control
+  const [bgmActive, setBgmActive] = useState(false);
+  const [bgmVolume, setBgmVolumeState] = useState(0.4);
+
   // Background music initialization
   useEffect(() => {
     const handleInteraction = () => {
         playBGM();
+        setBgmActive(isBGMPlaying());
         document.removeEventListener('click', handleInteraction);
         document.removeEventListener('pointerdown', handleInteraction);
     };
@@ -155,6 +160,14 @@ export const HandTrackerGame: React.FC = () => {
         document.removeEventListener('click', handleInteraction);
         document.removeEventListener('pointerdown', handleInteraction);
     };
+  }, []);
+
+  // Force active state sync
+  useEffect(() => {
+    const handleInterval = setInterval(() => {
+        setBgmActive(isBGMPlaying());
+    }, 1000);
+    return () => clearInterval(handleInterval);
   }, []);
 
   // Initialize camera and tracker
@@ -620,8 +633,9 @@ export const HandTrackerGame: React.FC = () => {
         </div>
       )}
 
-      {/* Theme Switcher */}
-      <div className="absolute bottom-10 left-10 z-50 pointer-events-auto">
+      {/* Controls Container at Bottom Left */}
+      <div className="absolute bottom-10 left-10 z-50 pointer-events-auto flex items-center gap-4">
+        {/* Theme Switcher */}
         <div className="relative">
           <button 
             onClick={() => setShowThemeMenu(!showThemeMenu)}
@@ -686,6 +700,55 @@ export const HandTrackerGame: React.FC = () => {
                 <span className="text-xs uppercase tracking-[0.2em] text-dynamic">Galaxy</span>
               </button>
             </div>
+          )}
+        </div>
+
+        {/* Music Switcher */}
+        <div className="relative">
+          <button 
+            onClick={() => {
+              const playing = toggleBGM();
+              setBgmActive(playing);
+            }}
+            className={`w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,0,0,0.1)] group relative border-2 ${
+              bgmActive 
+                ? 'border-emerald-500/50 dark:border-emerald-400/50 hover:border-emerald-500' 
+                : 'border-rose-500/50 dark:border-rose-400/50 hover:border-rose-500 animate-[pulse_2s_infinite]'
+            }`}
+            title={bgmActive ? "Tắt Nhạc Nền" : "Bật Nhạc Nền"}
+          >
+            {bgmActive ? (
+              <Volume2 className="w-5 h-5 text-emerald-500 dark:text-emerald-400 drop-shadow-sm" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-rose-500 dark:text-rose-400 drop-shadow-sm animate-pulse" />
+            )}
+            
+            {/* Soft glow behind the button */}
+            <div className={`absolute inset-0 rounded-full blur-md -z-10 group-hover:blur-lg transition-all opacity-50 ${
+              bgmActive ? 'bg-emerald-500/30' : 'bg-rose-500/30'
+            }`}></div>
+          </button>
+
+          {/* Floating Tooltip/Bubble when BGM is stopped to prompt user action */}
+          {!bgmActive && (
+            <div className="absolute bottom-16 left-0 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full whitespace-nowrap shadow-lg animate-bounce border border-rose-400 pointer-events-none origin-bottom-left flex items-center gap-1.5">
+              <span>Bật nhạc nền tại đây!</span>
+              <span className="animate-pulse">🎵</span>
+              {/* Little arrow down */}
+              <div className="absolute bottom-[-5px] left-5 w-2.5 h-2.5 bg-rose-500 rotate-45 border-r border-b border-rose-400"></div>
+            </div>
+          )}
+
+          {/* Fine Visual Indicator for Playing music notes */}
+          {bgmActive && (
+             <div className="absolute bottom-16 left-0 flex items-center gap-1.5 bg-emerald-500/95 text-white text-[10px] font-black px-3 py-1.5 rounded-full whitespace-nowrap shadow-md pointer-events-none origin-bottom-left border border-emerald-400">
+                <span className="flex gap-[2px] items-end h-2 w-2.5">
+                   <span className="w-[2px] bg-white animate-pulse rounded-full" style={{ height: '3px' }}></span>
+                   <span className="w-[2px] bg-white animate-pulse rounded-full" style={{ height: '8px' }}></span>
+                   <span className="w-[2px] bg-white animate-pulse rounded-full" style={{ height: '5px' }}></span>
+                </span>
+                <span>NHẠC NỀN ĐANG BẬT</span>
+             </div>
           )}
         </div>
       </div>

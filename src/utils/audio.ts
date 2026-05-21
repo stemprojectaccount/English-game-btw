@@ -22,10 +22,9 @@ export const playTone = (frequency: number, type: OscillatorType, duration: numb
 let bgmAudio: HTMLAudioElement | null = null;
 export const playBGM = () => {
     if (!bgmAudio) {
-        bgmAudio = new Audio('https://drive.google.com/uc?export=download&id=1BREUPr1dxzV1FTU4CI2gyNVSKcbO29am');
+        bgmAudio = new Audio('/bgm.mp3');
         bgmAudio.loop = true;
         bgmAudio.volume = 0.4;
-        bgmAudio.crossOrigin = "anonymous";
     }
     
     if (bgmAudio.paused) {
@@ -43,6 +42,42 @@ export const stopBGM = () => {
         bgmAudio.pause();
         bgmAudio.currentTime = 0;
     }
+};
+
+export const isBGMPlaying = (): boolean => {
+    return bgmAudio ? !bgmAudio.paused : false;
+};
+
+export const toggleBGM = (): boolean => {
+    if (!bgmAudio) {
+        playBGM();
+        return true;
+    }
+    if (bgmAudio.paused) {
+        let playPromise = bgmAudio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.log("Autoplay prevented on toggle:", error);
+            });
+        }
+        return true;
+    } else {
+        bgmAudio.pause();
+        return false;
+    }
+};
+
+export const setBGMVolume = (volume: number) => {
+    if (!bgmAudio) {
+        playBGM();
+    }
+    if (bgmAudio) {
+        bgmAudio.volume = volume;
+    }
+};
+
+export const getBGMVolume = (): number => {
+    return bgmAudio ? bgmAudio.volume : 0.4;
 };
 
 export const playPopSound = () => {
