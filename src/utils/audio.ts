@@ -22,7 +22,7 @@ export const playTone = (frequency: number, type: OscillatorType, duration: numb
 let bgmAudio: HTMLAudioElement | null = null;
 export const playBGM = () => {
     if (!bgmAudio) {
-        bgmAudio = new Audio('https://docs.google.com/uc?export=download&id=1BREUPr1dxzV1FTU4CI2gyNVSKcbO29am'); // We'll put bgm.mp3 in public folder
+        bgmAudio = new Audio('https://drive.google.com/uc?export=download&id=1BREUPr1dxzV1FTU4CI2gyNVSKcbO29am');
         bgmAudio.loop = true;
         bgmAudio.volume = 0.4;
         bgmAudio.crossOrigin = "anonymous";
