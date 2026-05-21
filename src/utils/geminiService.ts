@@ -34,15 +34,30 @@ export async function generateQuestion(difficulty: Difficulty, usedWords: string
     ? `\nIMPORTANT: Do NOT generate any of the following words: ${usedWords.join(', ')}` 
     : '';
 
+  const topics = [
+    'science', 'art', 'nature', 'technology', 'daily life', 'advanced literature', 
+    'history', 'sports', 'food', 'travel', 'health', 'business', 'music', 
+    'psychology', 'oceans', 'space', 'politics', 'movies', 'relationships', 
+    'animals', 'weather', 'geography', 'professions', 'emotions', 'architecture', 'mythology'
+  ];
+  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+  const randomSeedForGemini = Math.floor(Math.random() * 1000000);
+
   const prompt = `Generate a single English to Vietnamese vocabulary translation question. 
 Difficulty: ${difficulty} (${difficultyPrompt})${excludePrompt}
+
+IMPORTANT: Random Seed is ${randomSeedForGemini}. You MUST generate a COMPLETELY NEW word that you have not generated recently.
+IMPORTANT FOCUS: Contextualize the vocabulary specifically around this topic: ${randomTopic.toUpperCase()}. 
+Ensure the word is HIGHLY DIVERSE, creative, and strictly avoids common, beginner words and overused examples. 
+You MUST provide exactly 4 options. 
+CRITICAL: The position of the correct answer in the "options" array MUST be randomized every single time! It must NOT always be the first option!
 
 You must return a valid JSON object matching exactly this structure:
 
 {
   "type": "translate",
   "word": "Apple",
-  "options": ["Quả táo", "Quả chuối", "Quả cam"],
+  "options": ["Quả mận", "Quả chuối", "Quả táo", "Quả cam"],
   "answer": "Quả táo",
   "textToRead": "Apple"
 }
@@ -55,7 +70,9 @@ ONLY return the JSON object, absolutely no markdown formatting, no \`\`\`json bl
       model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
-        temperature: 0.7,
+        temperature: 0.95,
+        topP: 0.95,
+        topK: 64,
         responseMimeType: 'application/json',
       }
     });

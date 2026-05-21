@@ -14,12 +14,25 @@ interface QuestionModalProps {
 export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswerComplete }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   
   useEffect(() => {
     if (question) {
       window.speechSynthesis.cancel();
       setSelectedOption(null);
       setIsAnimating(false);
+      
+      const q = question as any;
+      if (q.options) {
+        const arr = [...q.options];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        setShuffledOptions(arr);
+      } else {
+        setShuffledOptions([]);
+      }
     }
   }, [question]);
 
@@ -50,7 +63,7 @@ export const QuestionModal: React.FC<QuestionModalProps> = ({ question, onAnswer
 
   const renderOptions = () => {
     const q = question as any; // Type assertion
-    const options: string[] = q.options;
+    const options: string[] = shuffledOptions.length > 0 ? shuffledOptions : (q.options || []);
 
     return (
       <div className="flex flex-col gap-4 mt-8">

@@ -163,10 +163,11 @@ export const HandTrackerGame: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Error accessing camera or initializing ML:", error);
-            if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError" || (error.message && error.message.includes("Permission denied"))) {
+            const errStr = String(error);
+            if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError" || errStr.includes("Permission denied") || errStr.includes("NotAllowedError")) {
                  setCameraError("Camera permission denied. Please allow camera access in your browser, or open the app in a new tab if you are viewing this in an iframe.");
             } else {
-                 setCameraError(`Camera Error: ${error.message || "Could not access camera"}. Try opening in a new tab.`);
+                 setCameraError(`Camera Error: ${error.message || errStr}. Try opening in a new tab.`);
             }
         }
     };
@@ -361,7 +362,7 @@ export const HandTrackerGame: React.FC = () => {
     }
 
     if (isTutorial && gameState === 'TUTORIAL') {
-        if (tutorialPhase === 'HAND' && handPointsList.length > 0 && !tutorialHandDetected.current) {
+        if (tutorialPhase === 'HAND' && (handPointsList.length > 0 || cameraError) && !tutorialHandDetected.current) {
             tutorialHandDetected.current = true;
             setTimeout(() => {
                 setTutorialPhase('BALLOON');
@@ -548,8 +549,42 @@ export const HandTrackerGame: React.FC = () => {
      };
   }, [drawFrame]);
 
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement> | React.MouseEvent<HTMLDivElement>) => {
+      if (gameState !== 'PLAYING' && !(isTutorial && tutorialPhase === 'BALLOON')) return;
+
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      let clientX = 'clientX' in e ? e.clientX : 0;
+      let clientY = 'clientY' in e ? e.clientY : 0;
+
+      // Handle touch separately if needed, but pointer events cover touch, mouse, and stylus natively usually
+      
+      const mouseX = clientX - rect.left;
+      const mouseY = clientY - rect.top;
+
+      ballsRef.current.forEach((ball, i) => {
+          if (!ball.active) return;
+          const radiusY = ball.radius * 1.2;
+          const dx = mouseX - ball.x;
+          const dy = mouseY - ball.y;
+          
+          const distanceX = dx / ball.radius;
+          const distanceY = dy / radiusY;
+          const isHit = (distanceX * distanceX + distanceY * distanceY) <= 1;
+
+          if (isHit) {
+              popBall(i, ball.x, ball.y);
+          }
+      });
+  };
+
   return (
-    <div className="relative w-full h-screen text-dynamic font-sans overflow-hidden select-none transition-colors duration-500">
+    <div 
+      className="relative w-full h-screen text-dynamic font-sans overflow-hidden select-none transition-colors duration-500 touch-none"
+      onPointerMove={handlePointerMove}
+      onPointerDown={handlePointerMove}
+    >
       
       {/* Video element for ML processing & Background */}
       <video ref={videoRef} className="absolute inset-0 w-full h-full object-cover z-0" style={{ transform: 'scaleX(-1)' }} playsInline muted />
@@ -754,10 +789,10 @@ export const HandTrackerGame: React.FC = () => {
           <div className="absolute top-32 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
              {tutorialPhase === 'HAND' && (
                  <div className="glass-modal px-8 py-6 rounded-3xl animate-[bounce_2s_infinite]">
-                    <h2 className="text-3xl font-display font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Bước 1: Quét Bàn Tay</h2>
+                    <h2 className="text-3xl font-display font-black uppercase text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">{cameraError ? "Dùng chuột/ngón tay" : "Bước 1: Quét Bàn Tay"}</h2>
                     <p className="text-lg font-medium mt-2 text-dynamic-secondary">
-                        {tutorialHandDetected.current 
-                           ? "Tuyệt vời! Hãy giữ tay bạn trong khung hình." 
+                        {tutorialHandDetected.current || cameraError
+                           ? "Tuyệt vời! Hãy chuẩn bị đập bóng." 
                            : "Hãy đưa tay lên trước camera để vẫy bóng nhé!"}
                     </p>
                  </div>
@@ -765,7 +800,9 @@ export const HandTrackerGame: React.FC = () => {
              {tutorialPhase === 'BALLOON' && (
                  <div className="glass-modal px-8 py-6 rounded-3xl animate-[bounce_2s_infinite]">
                     <h2 className="text-3xl font-display font-black uppercase text-amber-500 drop-shadow-sm">Bước 2: Đập Bóng!</h2>
-                    <p className="text-lg font-medium mt-2 text-dynamic-secondary">Di chuyển tay của bạn chạm vào quả bóng đang rơi để đập vỡ nó.</p>
+                    <p className="text-lg font-medium mt-2 text-dynamic-secondary">
+                       {cameraError ? "Di chuyển chuột hoặc dùng ngón tay chạm vào quả bóng đang rơi để đập vỡ nó." : "Di chuyển tay của bạn chạm vào quả bóng đang rơi để đập vỡ nó."}
+                    </p>
                  </div>
              )}
              {tutorialPhase === 'DONE' && (
